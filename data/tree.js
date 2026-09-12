@@ -1,4 +1,6 @@
 /**
+ * v1.1.0 — added Returns & Exchanges category
+ *
  * data/tree.js
  *
  * The decision tree data structure for the Contact Center KMT.
@@ -490,6 +492,105 @@ export const tree = {
             }
           }
         }
+      }
+    },
+
+    // ─────────────────────────────────────────────────────────────────────────
+    // RETURNS & EXCHANGES
+    // ─────────────────────────────────────────────────────────────────────────
+    "🔄  Returns & Exchanges": {
+      question: "What does the customer need help with?",
+      options: {
+
+        "Initiate a return": {
+          question: "What is the reason for the return?",
+          options: {
+
+            "Item is defective or damaged": {
+              resolution: "Approve return, arrange free pickup, and issue full refund or replacement.",
+              escalate: false,
+              steps: [
+                "Verify the order is within the 30-day return window.",
+                "Ask the customer to describe or photograph the defect.",
+                "Generate a free return shipping label (email to customer).",
+                "Once item is received at warehouse, process full refund or dispatch replacement.",
+                "Notify customer of resolution via email."
+              ]
+            },
+
+            "Changed mind / no longer needed": {
+              resolution: "Process return only if within 14-day window; customer covers return shipping.",
+              escalate: false,
+              steps: [
+                "Confirm order date — must be within 14 days for a change-of-mind return.",
+                "Inform customer they are responsible for return shipping costs.",
+                "Provide the warehouse return address.",
+                "Once item received in original condition, issue store credit or refund.",
+                "Inform customer that refund takes 5–7 business days."
+              ]
+            }
+          }
+        },
+
+        "Exchange for a different item": {
+          question: "Is the item being exchanged due to a defect or a preference change?",
+          options: {
+
+            "Defective — want same item replaced": {
+              resolution: "Arrange free exchange: collect faulty item and dispatch a new unit.",
+              escalate: false,
+              steps: [
+                "Confirm the defect and verify the item is within the 30-day window.",
+                "Schedule a free return pickup.",
+                "Dispatch a replacement unit with priority shipping.",
+                "Send tracking details to the customer.",
+                "Follow up after delivery to confirm satisfaction."
+              ]
+            },
+
+            "Preference change — want a different size, colour, or model": {
+              resolution: "Process an exchange if stock is available; otherwise offer store credit.",
+              escalate: false,
+              steps: [
+                "Check if the desired variant is in stock.",
+                "If in stock: create a new order for the desired item and process return of the original.",
+                "Customer covers return shipping for preference-based exchanges.",
+                "If out of stock: offer full store credit equal to the item value.",
+                "Confirm the exchange or credit with the customer via email."
+              ]
+            }
+          }
+        },
+
+        "Return status / refund not received": {
+          question: "Has the customer already shipped the return back?",
+          options: {
+
+            "Yes — return shipped, refund not yet received": {
+              resolution: "Track the return shipment and confirm warehouse receipt; trigger refund manually if needed.",
+              escalate: false,
+              steps: [
+                "Ask for the return tracking number.",
+                "Check the carrier's tracking to confirm delivery to the warehouse.",
+                "If delivered: check the refund processing status in the system.",
+                "If stuck in processing: manually trigger the refund and log the action.",
+                "Inform customer refund will reflect in 5–7 business days."
+              ]
+            },
+
+            "No — customer hasn't shipped yet, lost the return label": {
+              resolution: "Resend the return shipping label to the customer's registered email.",
+              escalate: false,
+              steps: [
+                "Verify the original return request is still active.",
+                "Regenerate and email a new return shipping label.",
+                "Remind customer to pack the item securely.",
+                "Advise customer to ship within 5 days to stay within the return window."
+              ]
+            }
+          }
+        }
+
       }
     }
 
