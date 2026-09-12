@@ -1,4 +1,5 @@
 /**
+ * cli.js  (v1.1.0 — added Stats and FAQ viewers)
  * cli.js
  *
  * Core CLI interaction engine for the Contact Center KMT.
@@ -14,8 +15,11 @@
 import inquirer  from 'inquirer';
 import chalk     from 'chalk';
 import figlet    from 'figlet';
+import { faqs } from './data/faqs.js';
 import { tree }  from './data/tree.js';
-import { logSession, readLogs, searchTree, formatTimestamp, truncate } from './utils.js';
+
+import { logSession, readLogs, searchTree, formatTimestamp, truncate, getStats } from './utils.js';
+
 
 // ─────────────────────────────────────────────────────────────────────────────
 // CONSTANTS / STYLES
@@ -77,6 +81,8 @@ export async function showMainMenu() {
           { name: chalk.green('🔍  Start New Query'),    value: 'query'  },
           { name: chalk.yellow('🔎  Search by Keyword'), value: 'search' },
           { name: chalk.blue('📋  View Usage Logs'),     value: 'logs'   },
+          { name: chalk.magenta('📊  View Stats'),        value: 'stats'  },
+          { name: chalk.cyan('📖  Quick FAQs'),          value: 'faqs'   },
           { name: chalk.red('🚪  Exit'),                 value: 'exit'   },
         ],
       },
@@ -91,6 +97,12 @@ export async function showMainMenu() {
         break;
       case 'logs':
         await viewLogs();
+        break;
+      case 'stats':
+        await viewStats();
+        break;
+      case 'faqs':
+        await viewFaqs();
         break;
       case 'exit':
         console.log('\n' + chalk.hex('#A78BFA')('  Goodbye! Stay helpful. 👋\n'));
@@ -384,6 +396,137 @@ async function viewLogs() {
   if (logs.length > 15) {
     console.log(chalk.gray(`  … and ${logs.length - 15} older session(s). See logs.json for full history.\n`));
   }
+
+  console.log(DIVIDER + '\n');
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// STATS VIEWER
+// ─────────────────────────────────────────────────────────────────────────────
+
+/**
+ * viewStats
+ *
+ * Displays an analytics summary of all logged sessions:
+ *   - Total sessions handled
+ *   - Number and percentage escalated
+ *   - Top 5 most-queried categories (based on first choice in each session)
+ *   - Timestamp of the most recent session
+ */
+async function viewStats() {
+  console.log('\n' + DIVIDER);
+  console.log(chalk.hex('#A78BFA').bold('\n  📊  Usage Statistics\n'));
+
+  const stats = getStats();
+
+  if (!stats) {
+    console.log(chalk.yellow('  No sessions logged yet. Run a query first!\n'));
+    return;
+  }
+
+  // ── Summary row ────────────────────────────────────────────────────────────
+  console.log(
+    chalk.white('  Total sessions   : ') + chalk.green.bold(stats.total)
+  );
+  console.log(
+    chalk.white('  Escalated        : ') +
+    chalk.yellow.bold(stats.escalated) +
+    chalk.gray(` (${stats.escalationRate})`)
+  );
+  console.log(
+    chalk.white('  Resolved in-call : ') +
+    chalk.green.bold(stats.total - stats.escalated)
+  );
+  if (stats.recentDate) {
+    console.log(
+      chalk.white('  Last session     : ') +
+      chalk.gray(formatTimestamp(stats.recentDate))
+    );
+  }
+
+  // ── Top categories ─────────────────────────────────────────────────────────
+  if (stats.topPaths.length > 0) {
+    console.log('\n  ' + chalk.white.underline('Top queried categories:'));
+    stats.topPaths.forEach(({ label, count }, i) => {
+      const bar   = chalk.hex('#7C3AED')('█'.repeat(count));
+      const rank  = chalk.gray(`  ${i + 1}.`);
+      const name  = chalk.white(truncate(label, 35).padEnd(36));
+      const cnt   = chalk.green.bold(`${count} session${count !== 1 ? 's' : ''}`);
+      console.log(`${rank} ${name}  ${bar}  ${cnt}`);
+    });
+  }
+
+  console.log('\n' + DIVIDER + '\n');
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// FAQ VIEWER
+// ─────────────────────────────────────────────────────────────────────────────
+
+/**
+ * viewFaqs
+ *
+ * Displays the quick-reference FAQ list.  The agent can browse all FAQs
+ * or type a keyword to filter them.
+ */
+async function viewFaqs() {
+  console.log('\n' + DIVIDER);
+  console.log(chalk.hex('#A78BFA').bold('\n  📖  Quick Reference FAQs\n'));
+
+  // Ask if the agent wants to filter or see all
+  const { mode } = await inquirer.prompt([
+    {
+      type:    'list',
+      name:    'mode',
+      message: chalk.cyan('How would you like to browse FAQs?'),
+      prefix:  chalk.hex('#7C3AED')('❯'),
+      choices: [
+        { name: chalk.white('Show all FAQs'),         value: 'all'    },
+        { name: chalk.white('Filter by keyword'),     value: 'filter' },
+        { name: chalk.gray('← Back to Main Menu'),    value: 'back'   },
+      ],
+    },
+  ]);
+
+  if (mode === 'back') return;
+
+  let filtered = faqs;
+
+  if (mode === 'filter') {
+    const { kw } = await inquirer.prompt([
+      {
+        type:    'input',
+        name:    'kw',
+        message: chalk.cyan('Enter keyword:'),
+        prefix:  chalk.hex('#7C3AED')('❯'),
+        validate: i => i.trim().length >= 2 ? true : 'At least 2 characters required.',
+      },
+    ]);
+    const term = kw.trim().toLowerCase();
+    filtered = faqs.filter(f =>
+      f.question.toLowerCase().includes(term) ||
+      f.answer.toLowerCase().includes(term)   ||
+      f.tags.some(t => t.includes(term))
+    );
+  }
+
+  if (filtered.length === 0) {
+    console.log(chalk.yellow('\n  No FAQs matched that keyword.\n'));
+    return;
+  }
+
+  console.log('');
+  filtered.forEach((faq, idx) => {
+    console.log(
+      chalk.hex('#7C3AED').bold(`  [${String(idx + 1).padStart(2, '0')}]  `) +
+      chalk.white.bold(faq.question)
+    );
+    console.log(chalk.green('        ' + faq.answer));
+    if (faq.tip) {
+      console.log(chalk.yellow('        💡 Tip: ') + chalk.dim(faq.tip));
+    }
+    console.log('');
+  });
 
   console.log(DIVIDER + '\n');
 }
