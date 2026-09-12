@@ -1,4 +1,5 @@
 /**
+ * utils.js  (v1.1.0 — added getStats)
  * utils.js
  *
  * Utility / helper functions for the Contact Center KMT.
@@ -181,5 +182,48 @@ export function formatTimestamp(iso) {
  * @returns {string}
  */
 export function truncate(str, maxLen = 60) {
-  return str.length > maxLen ? str.slice(0, maxLen - 1) + '…' : str;
+  return str.length > maxLen ? str.slice(0, maxLen - 1) + '\u2026' : str;
+}
+
+// ─ Analytics ────────────────────────────────────────────────────────────────────
+
+/**
+ * getStats
+ *
+ * Analyses all sessions in logs.json and returns a summary object:
+ *   - total          : total number of logged sessions
+ *   - escalated      : number of sessions that required escalation
+ *   - escalationRate : percentage of sessions escalated (string, e.g. "23%")
+ *   - topPaths       : the 5 most-common first-choice categories, sorted by frequency
+ *   - recentDate     : ISO timestamp of the most recent session
+ *
+ * @returns {Object|null} Stats object, or null if there are no logs yet.
+ */
+export function getStats() {
+  const logs = readLogs();
+  if (logs.length === 0) return null;
+
+  const total     = logs.length;
+  const escalated = logs.filter(s => s.escalated).length;
+  const rate      = Math.round((escalated / total) * 100);
+
+  // Count how often each top-level category was chosen (first step in path)
+  const categoryCounts = {};
+  for (const session of logs) {
+    if (session.path && session.path.length > 0) {
+      const firstChoice = session.path[0].choice;
+      categoryCounts[firstChoice] = (categoryCounts[firstChoice] || 0) + 1;
+    }
+  }
+
+  // Sort by frequency descending and take top 5
+  const topPaths = Object.entries(categoryCounts)
+    .sort((a, b) => b[1] - a[1])
+    .slice(0, 5)
+    .map(([label, count]) => ({ label, count }));
+
+  // Most recent session timestamp
+  const recentDate = logs[logs.length - 1]?.timestamp ?? null;
+
+  return { total, escalated, escalationRate: `${rate}%`, topPaths, recentDate };
 }
