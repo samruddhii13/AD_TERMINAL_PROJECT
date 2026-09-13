@@ -88,7 +88,9 @@ The core data lives in `data/tree.js` as a nested JavaScript object.
 | **Colour-coded output** | `chalk` — green for direct resolutions, yellow for escalations |
 | **Keyword Search** | Type `refund`, `OTP`, `locked`, etc. to jump directly to a relevant branch |
 | **Session logging** | Every completed query is saved to `logs.json` with timestamp + path taken |
-| **Usage Log viewer** | View the last 15 sessions directly from the main menu |
+| **Usage Log viewer** | View the last 20 sessions directly from the main menu |
+| **Stats dashboard** | Session totals, escalation rate, and top queried categories |
+| **Quick FAQs** | Browse or filter the built-in FAQ reference list |
 | **ASCII banner** | Rendered with `figlet` on startup |
 
 ---
@@ -158,3 +160,19 @@ No other files need to change — the traversal engine handles any tree shape au
 | [`chalk`](https://github.com/chalk/chalk) | Terminal colours and styling |
 | [`figlet`](https://github.com/patorjk/figlet.js) | ASCII art banner |
 | Node.js `fs` | Reading/writing `logs.json` |
+
+---
+
+## 📅 Changelog
+
+### v1.2.0
+- **config.js** — added `maxSearchResults` cap (20), `showTimestamps` toggle, and `accent` colour token.
+- **utils.js** — hardened `truncate()` against `null`/non-string values; added `clearLogs()` for programmatic log wipes.
+- **cli.js** — banner updated to v1.2; log viewer now shows up to 20 sessions; imports `clearLogs`; improved exit message.
+- **index.js** — fatal error handler now prints stack trace in `NODE_ENV=development`; exit codes documented.
+
+### v1.1.0
+- Added **Stats** dashboard (`viewStats` / `getStats`).
+- Added **Quick FAQs** viewer (`viewFaqs`) with keyword filtering.
+- Added `data/faqs.js` with 20 curated FAQ entries.
+
