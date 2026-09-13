@@ -8,6 +8,10 @@
  * This file simply imports the banner and menu from cli.js and starts
  * the application.  All logic is in cli.js, tree data in data/tree.js,
  * and helper utilities in utils.js.
+ *
+ * Exit codes:
+ *   0  — clean exit (user chose Exit)
+ *   1  — unhandled fatal error
  */
 
 import { showBanner, showMainMenu } from './cli.js';
@@ -21,6 +25,9 @@ async function main() {
 
 main().catch((err) => {
   // Graceful error handling at the top level
-  console.error('\n  Fatal error:', err.message);
+  console.error('\n  \u274c  Fatal error:', err.message);
+  if (process.env.NODE_ENV === 'development') {
+    console.error(err.stack);
+  }
   process.exit(1);
 });
