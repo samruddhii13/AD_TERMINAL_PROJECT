@@ -1,11 +1,12 @@
 /**
- * utils.js  (v1.1.0 — added getStats)
+ * utils.js  (v1.2.0 — improved truncate, added clearLogs)
  * utils.js
  *
  * Utility / helper functions for the Contact Center KMT.
  *
  * Responsibilities:
  *  - Logging completed sessions to logs.json
+ *  - Clearing the log file on demand
  *  - Searching the tree for a keyword
  *  - Reading and formatting logs for display
  *  - Miscellaneous formatting helpers
@@ -182,10 +183,12 @@ export function formatTimestamp(iso) {
  * @returns {string}
  */
 export function truncate(str, maxLen = 60) {
-  return str.length > maxLen ? str.slice(0, maxLen - 1) + '\u2026' : str;
+  // Guard: coerce non-strings gracefully
+  const s = str == null ? '' : String(str);
+  return s.length > maxLen ? s.slice(0, maxLen - 1) + '\u2026' : s;
 }
 
-// ─ Analytics ────────────────────────────────────────────────────────────────────
+// ─ Analytics ──────────────────────────────────────────────────────────────────────────────
 
 /**
  * getStats
@@ -226,4 +229,23 @@ export function getStats() {
   const recentDate = logs[logs.length - 1]?.timestamp ?? null;
 
   return { total, escalated, escalationRate: `${rate}%`, topPaths, recentDate };
+}
+
+// ─── Log Management ─────────────────────────────────────────────────────────────────
+
+/**
+ * clearLogs
+ *
+ * Wipes all sessions from logs.json by writing an empty array.
+ * Use with caution — this is irreversible.
+ *
+ * @returns {boolean} true if successful, false on write error.
+ */
+export function clearLogs() {
+  try {
+    fs.writeFileSync(LOGS_PATH, '[]', 'utf-8');
+    return true;
+  } catch {
+    return false;
+  }
 }
