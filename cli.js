@@ -1,5 +1,5 @@
 /**
- * cli.js  (v1.1.0 — added Stats and FAQ viewers)
+ * cli.js  (v1.2.0 — clearLogs import, bumped caps, improved UX copy)
  * cli.js
  *
  * Core CLI interaction engine for the Contact Center KMT.
@@ -18,7 +18,7 @@ import figlet    from 'figlet';
 import { faqs } from './data/faqs.js';
 import { tree }  from './data/tree.js';
 
-import { logSession, readLogs, searchTree, formatTimestamp, truncate, getStats } from './utils.js';
+import { logSession, readLogs, searchTree, formatTimestamp, truncate, getStats, clearLogs } from './utils.js';
 
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -51,7 +51,7 @@ export function showBanner() {
   console.log(
     chalk.hex('#A78BFA').bold('  Contact Center  ') +
     chalk.white('Knowledge Management Tool') +
-    chalk.gray('  v1.0')
+    chalk.gray('  v1.2')
   );
   console.log(
     chalk.gray('  Walk agents through the right resolution — every time.\n')
@@ -105,7 +105,7 @@ export async function showMainMenu() {
         await viewFaqs();
         break;
       case 'exit':
-        console.log('\n' + chalk.hex('#A78BFA')('  Goodbye! Stay helpful. 👋\n'));
+        console.log('\n' + chalk.hex('#A78BFA')('  Thanks for using KMT. Stay sharp, stay helpful! 👋\n'));
         process.exit(0);
     }
 
@@ -363,8 +363,8 @@ async function viewLogs() {
   // Display each session (most recent first)
   const reversed = [...logs].reverse();
 
-  // Show only the last 15 sessions to avoid flooding the terminal
-  const toShow = reversed.slice(0, 15);
+  // Show only the last 20 sessions to avoid flooding the terminal
+  const toShow = reversed.slice(0, 20);
 
   toShow.forEach((session, idx) => {
     const escalatedBadge = session.escalated
@@ -393,8 +393,8 @@ async function viewLogs() {
     console.log('');
   });
 
-  if (logs.length > 15) {
-    console.log(chalk.gray(`  … and ${logs.length - 15} older session(s). See logs.json for full history.\n`));
+  if (logs.length > 20) {
+    console.log(chalk.gray(`  … and ${logs.length - 20} older session(s). See logs.json for full history.\n`));
   }
 
   console.log(DIVIDER + '\n');
